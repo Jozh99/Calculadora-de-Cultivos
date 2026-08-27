@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Calculadora de Cultivos e Ingredientes para Queso</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16403B">
+
+<!-- soporte iOS: "Agregar a inicio" -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calc. Queso">
+
+<style>
+  :root{
+    --teal-deep: #16403B;
+    --bg: #F5F7F6;
+    --ink: #1D2B2A;
+    --ink-soft: #78827E;
+    --line: #E4E9E7;
+    --mono: 'SF Mono','Cascadia Mono','Consolas','Menlo',monospace;
+    --sans: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+
+    --cult: #B08300;    --cult-soft: #FBF1D9;
+    --calc: #2A6F9E;    --calc-soft: #DCEAF4;
+    --sal:  #6B5B95;    --sal-soft:  #E9E4F3;
+    --dvn:  #3E8A5B;    --dvn-soft:  #DFEFE5;
+    --sum:  #16403B;    --sum-soft:  #E1EAE8;
+    --warn-bg:#FFF3E0;  --warn-line:#E8B769; --warn-ink:#8A5000;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    height:100%; overscroll-behavior:none; }
+  #app{ max-width:460px; margin:0 auto; min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column; background:var(--bg); }
+
+  header.top{
+    background:var(--teal-deep); color:#fff;
+    padding: calc(env(safe-area-inset-top) + 14px) 20px 16px;
+  }
+  header.top .eyebrow{ display:flex; align-items:center; gap:6px; font-size:.68rem;
+    letter-spacing:1.4px; text-transform:uppercase; opacity:.78; margin-bottom:4px; }
+  header.top h1{ font-size:1.05rem; margin:0; line-height:1.35; font-weight:700; }
+
+  .lote{
+    background:#fff; border-bottom:1px solid var(--line);
+    padding:14px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .lote label{ display:flex; flex-direction:column; gap:4px; }
+  .lote .k{ font-size:.65rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); }
+  .lote input{ font-family:var(--mono); font-size:.9rem; padding:8px 9px; border:1px solid var(--line);
+    border-radius:7px; background:#FAFBFA; color:var(--ink); width:100%; }
+
+  main{ flex:1; overflow-y:auto; padding: 18px 20px 24px; }
+
+  .field{ display:block; margin-bottom:16px; }
+  .field .k{ font-size:.72rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); }
+  .field .s{ display:block; font-size:.68rem; color:#9AA3A0; margin-top:1px; }
+  .field input, .field select{
+    margin-top:7px; width:100%; font-family:var(--mono); font-size:.98rem;
+    padding:10px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--accent,#16403B); box-shadow:0 0 0 3px var(--accent-soft, #E1EAE8); }
+
+  .results{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:6px; }
+  .results .card{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 11px; }
+  .results .card .k{ font-size:.62rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#9AA3A0; }
+  .results .card .v{ font-family:var(--mono); font-size:1.08rem; font-weight:700; margin-top:2px; color:var(--accent,#16403B); }
+  .results.wide .card{ grid-column:1 / -1; }
+
+  .warning{ margin-top:12px; display:flex; gap:8px; align-items:flex-start;
+    background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink);
+    border-radius:9px; padding:10px 12px; font-size:.8rem; }
+  .warning svg{ flex-shrink:0; margin-top:1px; }
+
+  .resumen-sub{ font-size:.8rem; color:var(--ink-soft); margin-bottom:12px; }
+
+  nav.tabbar{
+    background:#fff; border-top:1px solid var(--line);
+    display:flex; justify-content:space-around;
+    padding: 6px 4px calc(env(safe-area-inset-bottom) + 6px);
+    position:sticky; bottom:0;
+  }
+  nav.tabbar button{
+    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:6px 10px; border-radius:10px; color:#A3A3A3; font-family:var(--sans);
+  }
+  nav.tabbar button.active{ color: var(--active-color, #16403B); background: var(--active-soft, #E1EAE8); }
+  nav.tabbar button span{ font-size:.62rem; font-weight:700; }
+  nav.tabbar svg{ width:20px; height:20px; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="eyebrow">🥛 Laboratorio · Planta piloto</div>
+    <h1>Dosificación de cultivo e ingredientes para queso</h1>
+  </header>
+
+  <div class="lote">
+    <label><span class="k">Leche (L)</span><input type="number" id="litros" value="100" step="0.001" min="0"></label>
+    <label><span class="k">Cuajada (kg)</span><input type="number" id="cuajada" value="10" step="0.001" min="0"></label>
+  </div>
+
+  <main id="main">
+
+    <!-- CULTIVO -->
+    <section class="panel active" id="panel-cultivo" style="--accent:#B08300;--accent-soft:#FBF1D9;">
+      <div class="field"><span class="k">Dosis recomendada</span><span class="s">UC por cada 100 L de leche</span>
+        <input type="number" id="dosis" value="2" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">UC por sobre</span><span class="s">UC totales que contiene el sobre</span>
+        <input type="number" id="ucSobre" value="10" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">Peso del sobre</span><span class="s">Gramos</span>
+        <input type="number" id="gramosSobre" value="30" step="0.0001" min="0"></div>
+      <div class="results" id="res-cultivo"></div>
+      <div class="warning" id="warn-cultivo" style="display:none;"></div>
+    </section>
+
+    <!-- CALCIO -->
+    <section class="panel" id="panel-calcio" style="--accent:#2A6F9E;--accent-soft:#DCEAF4;">
+      <div class="field"><span class="k">Porcentaje de CaCl₂</span><span class="s">% respecto a la leche</span>
+        <input type="number" id="pctCalcio" value="0.02" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">Unidad de la leche</span>
+        <select id="unidadLeche"><option value="L" selected>Litros</option><option value="kg">Kilogramos</option></select></div>
+      <div class="field"><span class="k">Densidad de la leche</span><span class="s">kg/L — usa 1.00 para aproximación simple</span>
+        <input type="number" id="densidad" value="1.03" step="0.0001" min="0.5"></div>
+      <div class="field"><span class="k">Concentración de solución comercial</span><span class="s">Opcional — vacío si es producto puro</span>
+        <input type="number" id="concSolucion" value="" step="0.0001" min="0" max="100" placeholder="Ej. 32"></div>
+      <div class="results" id="res-calcio"></div>
+      <div class="warning" id="warn-calcio" style="display:none;"></div>
+    </section>
+
+    <!-- SAL -->
+    <section class="panel" id="panel-sal" style="--accent:#6B5B95;--accent-soft:#E9E4F3;">
+      <div class="field"><span class="k">Porcentaje de sal</span><span class="s">% respecto al peso de la cuajada</span>
+        <input type="number" id="pctSal" value="1.8" step="0.0001" min="0"></div>
+      <div class="results" id="res-sal"></div>
+      <div class="warning" id="warn-sal" style="display:none;"></div>
+    </section>
+
+    <!-- DELVONIS -->
+    <section class="panel" id="panel-delvonis" style="--accent:#3E8A5B;--accent-soft:#DFEFE5;">
+      <div class="field"><span class="k">Porcentaje de DelvoNis</span><span class="s">% respecto al peso de la cuajada</span>
+        <input type="number" id="pctDelvonis" value="0.002" step="0.0001" min="0"></div>
+      <div class="results" id="res-delvonis"></div>
+      <div class="warning" id="warn-delvonis" style="display:none;"></div>
+    </section>
+
+    <!-- RESUMEN -->
+    <section class="panel" id="panel-resumen" style="--accent:#16403B;--accent-soft:#E1EAE8;">
+      <div class="resumen-sub" id="resumen-sub">—</div>
+      <div class="results wide" id="res-resumen"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="cultivo" class="active" style="--active-color:#B08300;--active-soft:#FBF1D9;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M12 10C12 6 9 4 5 4c0 4 2 7 7 7Z"/><path d="M12 10c0-3 2-5 5-5 0 3-1.5 5-5 5Z"/></svg>
+      <span>Cultivo</span>
+    </button>
+    <button data-tab="calcio" style="--active-color:#2A6F9E;--active-soft:#DCEAF4;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6 6.2 6 10.8a6 6 0 0 1-12 0c0-4.6 6-10.8 6-10.8Z"/></svg>
+      <span>CaCl₂</span>
+    </button>
+    <button data-tab="sal" style="--active-color:#6B5B95;--active-soft:#E9E4F3;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      <span>Sal</span>
+    </button>
+    <button data-tab="delvonis" style="--active-color:#3E8A5B;--active-soft:#DFEFE5;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      <span>DelvoNis</span>
+    </button>
+    <button data-tab="resumen" style="--active-color:#16403B;--active-soft:#E1EAE8;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1Z"/><path d="M6 5h12v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5Z"/><path d="M9 11h6M9 15h6"/></svg>
+      <span>Resumen</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const num = (v) => (v === '' || v === null || v === undefined ? NaN : parseFloat(v));
+  const invalid = (...vals) => vals.some(v => Number.isNaN(v) || v < 0);
+  const fmt = (n, dec) => (n===null||n===undefined||Number.isNaN(n)||!Number.isFinite(n)) ? '—' :
+    n.toLocaleString('es-MX', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+
+  const warnSVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+
+  function card(k, v){ return `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+
+  function calcular(){
+    const L = num($('litros').value);
+    const CJ = num($('cuajada').value);
+
+    // CULTIVO
+    const dosis = num($('dosis').value), ucSobre = num($('ucSobre').value), gramosSobre = num($('gramosSobre').value);
+    const resCult = $('res-cultivo'), warnCult = $('warn-cultivo');
+    if (invalid(L, dosis, ucSobre, gramosSobre) || ucSobre === 0){
+      resCult.innerHTML = card('UC necesarias','—') + card('Cultivo a pesar','—');
+      warnCult.style.display='flex';
+      warnCult.innerHTML = warnSVG + '<span>Revisa los valores: no puede haber campos vacíos, negativos, ni UC por sobre igual a cero.</span>';
+      var cultivoG = NaN, ucNecesarias = NaN;
+    } else {
+      ucNecesarias = dosis * (L/100);
+      cultivoG = (dosis * L * gramosSobre) / (100 * ucSobre);
+      resCult.innerHTML = card('UC necesarias', fmt(ucNecesarias,4)) + card('Cultivo a pesar', fmt(cultivoG,4)+' g') + card('Equivalente', fmt(cultivoG*1000,2)+' mg');
+      if (cultivoG > 0 && cultivoG < 0.1){
+        warnCult.style.display='flex';
+        warnCult.innerHTML = warnSVG + '<span>Cantidad menor a 0.1 g: usa balanza analítica o prepara una predilución.</span>';
+      } else { warnCult.style.display='none'; }
+    }
+
+    // CALCIO
+    const pctCalcio = num($('pctCalcio').value), unidad = $('unidadLeche').value, densidad = num($('densidad').value);
+    const concRaw = $('concSolucion').value, conc = concRaw==='' ? null : num(concRaw);
+    const resCalc = $('res-calcio'), warnCalc = $('warn-calcio');
+    const concInvalid = (conc !== null && (Number.isNaN(conc) || conc < 0 || conc > 100));
+    let calcioActivo = NaN;
+    if (invalid(L, pctCalcio, densidad) || concInvalid){
+      resCalc.innerHTML = card('Peso de leche','—') + card('CaCl₂ activo','—');
+      warnCalc.style.display='flex';
+      warnCalc.innerHTML = warnSVG + '<span>Revisa los valores: no puede haber campos vacíos ni negativos.</span>';
+    } else {
+      const pesoLecheKg = unidad==='kg' ? L : L*densidad;
+      calcioActivo = pesoLecheKg * (pctCalcio/100) * 1000;
+      const producto = (conc && conc>0) ? calcioActivo/(conc/100) : calcioActivo;
+      const labelProd = (conc && conc>0) ? 'Producto comercial' : 'Producto (puro)';
+      resCalc.innerHTML = card('Peso de leche', fmt(pesoLecheKg,3)+' kg') + card('CaCl₂ activo', fmt(calcioActivo,4)+' g') + card(labelProd, fmt(producto,4)+' g');
+      if (calcioActivo > 0 && calcioActivo < 0.1){
+        warnCalc.style.display='flex';
+        warnCalc.innerHTML = warnSVG + '<span>Cantidad menor a 0.1 g: usa balanza analítica o prepara una predilución.</span>';
+      } else { warnCalc.style.display='none'; }
+    }
+
+    // SAL
+    const pctSal = num($('pctSal').value);
+    const resSal = $('res-sal'), warnSal = $('warn-sal');
+    let salG = NaN;
+    if (invalid(CJ, pctSal)){
+      resSal.innerHTML = card('Sal a agregar','—') + card('Equivalente','—');
+      warnSal.style.display='flex';
+      warnSal.innerHTML = warnSVG + '<span>Revisa los valores: no puede haber campos vacíos ni negativos.</span>';
+    } else {
+      salG = CJ * (pctSal/100) * 1000;
+      resSal.innerHTML = card('Sal a agregar', fmt(salG,3)+' g') + card('Equivalente', fmt(salG/1000,5)+' kg');
+      if (salG > 0 && salG < 0.1){
+        warnSal.style.display='flex';
+        warnSal.innerHTML = warnSVG + '<span>Cantidad menor a 0.1 g: usa balanza analítica o prepara una predilución.</span>';
+      } else { warnSal.style.display='none'; }
+    }
+
+    // DELVONIS
+    const pctDelvonis = num($('pctDelvonis').value);
+    const resDvn = $('res-delvonis'), warnDvn = $('warn-delvonis');
+    let dvnG = NaN;
+    if (invalid(CJ, pctDelvonis)){
+      resDvn.innerHTML = card('DelvoNis a agregar','—') + card('Equivalente','—');
+      warnDvn.style.display='flex';
+      warnDvn.innerHTML = warnSVG + '<span>Revisa los valores: no puede haber campos vacíos ni negativos.</span>';
+    } else {
+      dvnG = CJ * (pctDelvonis/100) * 1000;
+      resDvn.innerHTML = card('DelvoNis a agregar', fmt(dvnG,5)+' g') + card('Equivalente', fmt(dvnG*1000,3)+' mg');
+      if (dvnG > 0 && dvnG < 0.1){
+        warnDvn.style.display='flex';
+        warnDvn.innerHTML = warnSVG + '<span>Cantidad menor a 0.1 g: usa balanza analítica o prepara una predilución del producto.</span>';
+      } else { warnDvn.style.display='none'; }
+    }
+
+    // RESUMEN
+    $('resumen-sub').textContent = `${fmt(L,3)} L de leche  →  ${fmt(CJ,3)} kg de cuajada`;
+    $('res-resumen').innerHTML =
+      card('Cultivo requerido', Number.isNaN(ucNecesarias)?'—':fmt(ucNecesarias,4)+' UC') +
+      card('Cultivo a pesar', Number.isNaN(cultivoG)?'—':fmt(cultivoG,4)+' g') +
+      card('Cloruro de calcio', Number.isNaN(calcioActivo)?'—':fmt(calcioActivo,4)+' g') +
+      card('Cuajada obtenida', fmt(CJ,3)+' kg') +
+      card('Sal', Number.isNaN(salG)?'—':fmt(salG,3)+' g') +
+      card('DelvoNis', Number.isNaN(dvnG)?'—':fmt(dvnG,5)+' g');
+  }
+
+  document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calcular));
+
+  document.getElementById('tabbar').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('nav.tabbar button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('main').scrollTop = 0;
+  });
+
+  calcular();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>

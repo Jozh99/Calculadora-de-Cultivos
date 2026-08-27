@@ -1,0 +1,15 @@
+{
+  "name": "Calculadora de Cultivos e Ingredientes para Queso",
+  "short_name": "Calc. Queso",
+  "description": "Dosificación de cultivo láctico, cloruro de calcio, sal y DelvoNis para producción de queso.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16403B",
+  "theme_color": "#16403B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
