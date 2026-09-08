@@ -1,4 +1,4 @@
-const CACHE_NAME = "calc-queso-v1";
+const CACHE_NAME = "calc-queso-v2";
 const APP_SHELL = [
   "./",
   "./index.html",

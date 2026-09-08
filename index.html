@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <title>Calculadora de Cultivos e Ingredientes para Queso</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#16403B">
@@ -28,6 +29,7 @@
     --calc: #2A6F9E;    --calc-soft: #DCEAF4;
     --sal:  #6B5B95;    --sal-soft:  #E9E4F3;
     --dvn:  #3E8A5B;    --dvn-soft:  #DFEFE5;
+    --acido:#B5432B;    --acido-soft:#F7E1DA;
     --sum:  #16403B;    --sum-soft:  #E1EAE8;
     --warn-bg:#FFF3E0;  --warn-line:#E8B769; --warn-ink:#8A5000;
   }
@@ -85,12 +87,12 @@
     position:sticky; bottom:0;
   }
   nav.tabbar button{
-    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
-    padding:6px 10px; border-radius:10px; color:#A3A3A3; font-family:var(--sans);
+    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:6px 4px; border-radius:9px; color:#A3A3A3; font-family:var(--sans); flex:1; min-width:0;
   }
   nav.tabbar button.active{ color: var(--active-color, #16403B); background: var(--active-soft, #E1EAE8); }
-  nav.tabbar button span{ font-size:.62rem; font-weight:700; }
-  nav.tabbar svg{ width:20px; height:20px; }
+  nav.tabbar button span{ font-size:.56rem; font-weight:700; white-space:nowrap; }
+  nav.tabbar svg{ width:18px; height:18px; }
 
   .panel{ display:none; }
   .panel.active{ display:block; }
@@ -153,6 +155,18 @@
       <div class="warning" id="warn-delvonis" style="display:none;"></div>
     </section>
 
+    <!-- ACIDO ACETICO -->
+    <section class="panel" id="panel-acido" style="--accent:#B5432B;--accent-soft:#F7E1DA;">
+      <div class="field"><span class="k">Factor de dosificación</span><span class="s">g de ácido acético por litro de leche, por cada 0.1 de pH a bajar — derivado de 17 pruebas de Oaxaca</span>
+        <input type="number" id="factorAcido" value="0.092" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">pH inicial de la leche</span>
+        <input type="number" id="phInicial" value="6.7" step="0.01"></div>
+      <div class="field"><span class="k">pH objetivo (final)</span>
+        <input type="number" id="phFinal" value="6.1" step="0.01"></div>
+      <div class="results" id="res-acido"></div>
+      <div class="warning" id="warn-acido" style="display:none;"></div>
+    </section>
+
     <!-- RESUMEN -->
     <section class="panel" id="panel-resumen" style="--accent:#16403B;--accent-soft:#E1EAE8;">
       <div class="resumen-sub" id="resumen-sub">—</div>
@@ -177,6 +191,10 @@
     <button data-tab="delvonis" style="--active-color:#3E8A5B;--active-soft:#DFEFE5;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
       <span>DelvoNis</span>
+    </button>
+    <button data-tab="acido" style="--active-color:#B5432B;--active-soft:#F7E1DA;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.2a2 2 0 0 1-.4 1.2L5.6 15A3 3 0 0 0 8 20h8a3 3 0 0 0 2.4-5l-4-5.6a2 2 0 0 1-.4-1.2V3"/><path d="M6.5 14h11"/></svg>
+      <span>Ácido</span>
     </button>
     <button data-tab="resumen" style="--active-color:#16403B;--active-soft:#E1EAE8;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1Z"/><path d="M6 5h12v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5Z"/><path d="M9 11h6M9 15h6"/></svg>
@@ -275,12 +293,28 @@
       } else { warnDvn.style.display='none'; }
     }
 
+    // ACIDO ACETICO
+    const factorAcido = num($('factorAcido').value), phIni = num($('phInicial').value), phFin = num($('phFinal').value);
+    const resAcido = $('res-acido'), warnAcido = $('warn-acido');
+    let acidoKg = NaN;
+    const deltaPh = phIni - phFin;
+    if (invalid(L, factorAcido) || Number.isNaN(phIni) || Number.isNaN(phFin) || deltaPh <= 0){
+      resAcido.innerHTML = card('ΔpH','—') + card('Ácido acético','—');
+      warnAcido.style.display='flex';
+      warnAcido.innerHTML = warnSVG + '<span>Revisa los valores: el pH inicial debe ser mayor que el pH objetivo, y no puede haber campos vacíos ni negativos.</span>';
+    } else {
+      acidoKg = factorAcido * (L/1000) * (deltaPh/0.1);
+      resAcido.innerHTML = card('ΔpH', fmt(deltaPh,2)) + card('Ácido acético', fmt(acidoKg,4)+' kg') + card('Equivalente', fmt(acidoKg*1000,2)+' g');
+      warnAcido.style.display='none';
+    }
+
     // RESUMEN
     $('resumen-sub').textContent = `${fmt(L,3)} L de leche  →  ${fmt(CJ,3)} kg de cuajada`;
     $('res-resumen').innerHTML =
       card('Cultivo requerido', Number.isNaN(ucNecesarias)?'—':fmt(ucNecesarias,4)+' UC') +
       card('Cultivo a pesar', Number.isNaN(cultivoG)?'—':fmt(cultivoG,4)+' g') +
       card('Cloruro de calcio', Number.isNaN(calcioActivo)?'—':fmt(calcioActivo,4)+' g') +
+      card('Ácido acético', Number.isNaN(acidoKg)?'—':fmt(acidoKg,4)+' kg') +
       card('Cuajada obtenida', fmt(CJ,3)+' kg') +
       card('Sal', Number.isNaN(salG)?'—':fmt(salG,3)+' g') +
       card('DelvoNis', Number.isNaN(dvnG)?'—':fmt(dvnG,5)+' g');
